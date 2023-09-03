@@ -1,30 +1,20 @@
 Attribute VB_Name = "Module1"
 Sub StockData()
 
-    For Each ws In Worksheets
-    
-    Dim Worksheet As String
-    Dim OpenPrice As Double
-    Dim ClosePrice As Double
-    Dim YearlyChange As Double
+For Each ws In Worksheets
+
+    Dim TCounter As Long
     Dim PercentChange As Double
     Dim TotalStock As Double
-    
+
     Dim GreatestIncrease As Double
     Dim GreatestDecrease As Double
     Dim GreatestVolume As Double
-    Dim TIncrease As String
-    Dim TDecrease As String
-    Dim TVolume As String
     
-    GreatestIncrease = 0
-    GreatestDecrease = 0
-    GreatestVolume = 0
+    Dim i As Long
+    Dim row As Long
     
-    TotalStock = 0
-    
-    
-    lastrow = ws.Cells(Rows.Count, 1).End(xlUp).row
+    LastRowTicker = ws.Cells(Rows.Count, 1).End(xlUp).row
     
     ws.Range("I1") = "Ticker"
     ws.Range("J1") = "Yearly Change"
@@ -37,98 +27,78 @@ Sub StockData()
     ws.Range("Q1") = "Value"
     
     'to autofit the columns
-    ws.Columns(10).AutoFit
-    ws.Columns(11).AutoFit
-    ws.Columns(12).AutoFit
-    ws.Columns(15).AutoFit
+    ws.Columns("A:Z").AutoFit
     
-    
-    Dim row As Integer
+    TCounter = 2
     row = 2
+
+    For i = 2 To LastRowTicker
     
-    YearlyChange = 0
-    ClosePrice = 0
-    OpenPrice = 0
-    For i = 2 To lastrow
-        If ws.Cells(i + 1, 1) <> ws.Cells(i, 1) Then
+    If ws.Cells(i + 1, 1) <> ws.Cells(i, 1) Then
+        ' Ticker
+        ws.Cells(TCounter, 9) = ws.Cells(i, 1)
         
-           'ticker
-            ws.Range("I" & row) = ws.Cells(i, 1)
-            
-            'yearly change
-            
-              OpenPrice = OpenPrice + ws.Cells(i, 3)
-              ClosePrice = ClosePrice + ws.Cells(i, 6)
-              
-              YearlyChange = ClosePrice - OpenPrice
-              ws.Range("J" & row) = YearlyChange
-                
-                
-            'conditional formating to fill in the colour for yearly change
-                If YearlyChange > 0 Then
-                    ws.Range("J" & row).Interior.ColorIndex = 4
-                ElseIf YearlyChange < 0 Then
-                    ws.Range("J" & row).Interior.ColorIndex = 3
-                Else
-                    ws.Range("J" & row).Interior.ColorIndex = 48
-                End If
+        ' Yearly change
+        ws.Cells(TCounter, 10) = ws.Cells(i, 6) - ws.Cells(row, 3)
+        
+        ' Conditional formatting to fill in the color for yearly change
+        If ws.Cells(TCounter, 10).Value < 0 Then
+            ws.Cells(TCounter, 10).Interior.ColorIndex = 3
+        Else
+            ws.Cells(TCounter, 10).Interior.ColorIndex = 4
+        End If
+
+        ' Percent change
+        If ws.Cells(row, 3) <> 0 Then
+            PercentChange = ((ws.Cells(i, 6) - ws.Cells(row, 3)) / ws.Cells(row, 3))
+            ws.Cells(TCounter, 11) = Format(PercentChange, "0.00%")
+        Else
+            ws.Cells(TCounter, 11) = Format(0, "0.00%")
+        End If
+
+        ' Total stock
+        TotalStock = Application.WorksheetFunction.Sum(Range(ws.Cells(row, 7), ws.Cells(i, 7)))
+        ws.Cells(TCounter, 12).NumberFormat = "0"
+        ws.Cells(TCounter, 12) = TotalStock
+
+        TCounter = TCounter + 1
+        row = i + 1
     
-            'percent change
-                If OpenPrice <> 0 Then
-                    PercentChange = (YearlyChange / OpenPrice) * 100
-                Else
-                    PercentChange = 0
-                End If
-                ws.Range("K" & row) = Format(PercentChange, "0.00%")
-            
-            'total stock
-              TotalStock = TotalStock + ws.Cells(i, 7)
-              ws.Range("L" & row).NumberFormat = "0"
-              ws.Range("L" & row) = TotalStock
-              
-              
-              'greatest % increase and % decrease
-                If PercentChange > GreatestIncrease Then
-                    GreatestIncrease = PercentChange
-                    TIncrease = ws.Cells(i, 1)
-                ElseIf PercentChange < GreatestDecrease Then
-                    GreatestDecrease = PercentChange
-                    TDecrease = ws.Cells(i, 1)
-                End If
-                
-                ws.Range("P2") = TIncrease
-                ws.Range("Q2") = Format(GreatestIncrease, "0.00%")
-                
-                ws.Range("P3") = TDecrease
-                ws.Range("Q3") = Format(GreatestDecrease, "0.00%")
-                
-                'greatest volume
-                 If TotalStock > GreatestVolume Then
-                    GreatestVolume = TotalStock
-                    TVolume = ws.Cells(i, 1)
-                End If
-                
-                ws.Range("Q4").NumberFormat = "0"
-                ws.Range("P4") = TVolume
-                ws.Range("Q4") = GreatestVolume
-              
-              row = row + 1
-              
-              OpenPrice = 0
-              ClosePrice = 0
-              TotalStock = 0
-              
-              Else
-              TotalStock = TotalStock + ws.Cells(i, 7)
-              OpenPrice = OpenPrice + ws.Cells(i, 3)
-              ClosePrice = ClosePrice + ws.Cells(i, 6)
+    End If
+    
+    Next i
+    
+    LastRowSummary = ws.Cells(Rows.Count, 9).End(xlUp).row
+    
+    GreatestIncrease = ws.Cells(2, 11)
+    GreatestDecrease = ws.Cells(2, 11)
+    GreatestVolume = ws.Cells(2, 12)
+
+        For i = 2 To LastRowSummary
+
+        ' Greatest % increase and % decrease, and volume
+            If ws.Cells(i, 12) > GreatestVolume Then
+                GreatestVolume = ws.Cells(i, 12)
+                ws.Cells(4, 16) = ws.Cells(i, 9)
             End If
+            
+            If ws.Cells(i, 11) > GreatestIncrease Then
+                GreatestIncrease = ws.Cells(i, 11)
+                ws.Cells(2, 16) = ws.Cells(i, 9)
+            End If
+            
+            If ws.Cells(i, 11) < GreatestDecrease Then
+                GreatestDecrease = ws.Cells(i, 11)
+                ws.Cells(3, 16) = ws.Cells(i, 9)
+            End If
+        Next i
         
-       Next i
-             
+        ' Format the result cells
+        ws.Range("Q2").NumberFormat = "0.00%"
+        ws.Range("Q3").NumberFormat = "0.00%"
+        ws.Range("Q4").NumberFormat = "0"
+
+
     Next ws
-
+    
 End Sub
-
-
-
